@@ -123,6 +123,11 @@ input,select{font-family:inherit;font-size:15px}
 .next-card{display:flex;gap:14px;align-items:center;width:100%;text-align:left;background:var(--ink);border:2px solid var(--ink3);border-radius:16px;padding:14px 16px;margin-top:10px;transition:border-color .15s,background .15s}
 .next-card:active{background:#2a1d13}
 .next-card.hot{border-color:var(--orange)}
+.next-box{display:block;padding:14px 16px 16px}
+.next-box .nrow{display:flex;gap:14px;align-items:center}
+.next-card .nm{font-size:13px;font-weight:600;color:var(--orange);margin-top:5px;line-height:1.35}
+.next-cta{display:block;width:100%;margin-top:12px;background:var(--orange);color:#fff;font-weight:700;font-size:16px;border-radius:999px;padding:13px 16px;text-align:center}
+.next-cta:active{filter:brightness(.92)}
 .next-card .ni{width:52px;height:52px;border-radius:14px;background:var(--orange);display:flex;align-items:center;justify-content:center;flex:none}
 .next-card .ni svg{width:32px;height:32px}
 .next-card .nt{font-size:17px;font-weight:700;line-height:1.2}
@@ -226,6 +231,7 @@ td input[type=text]{width:100%;min-width:130px;background:var(--ink);color:var(-
   .next-card .ni{width:42px;height:42px}.next-card .ni svg{width:26px;height:26px}
   .next-card .nt{font-size:15px}.next-card .ns{font-size:12.5px}
   .next-card .ng{padding:7px 10px;font-size:12px}
+  .next-cta{font-size:14.5px;padding:11px 12px;margin-top:10px}.next-card .nm{font-size:12px}
   .screen{justify-content:flex-start;padding:14px 16px max(18px,env(safe-area-inset-bottom))}
   .top{position:relative;top:auto;left:auto;right:auto;width:100%;margin-bottom:auto;padding-bottom:18px;flex:none}
   .foot{position:relative;bottom:auto;margin-top:auto;padding-top:18px;flex:none;font-size:12px}
@@ -314,6 +320,7 @@ td input[type=text]{width:100%;min-width:130px;background:var(--ink);color:var(-
   .next-card .ni{width:36px;height:36px}.next-card .ni svg{width:22px;height:22px}
   .next-card .nt{font-size:14px}.next-card .ns{font-size:11.5px}
   .next-card .ng{padding:6px 10px;font-size:11px}
+  .next-cta{font-size:13px;padding:8px 10px;margin-top:8px}.next-card .nm{font-size:11px}
   .act-badge{font-size:13px;padding:8px 10px;margin-top:8px}
   .act-btn{font-size:15px;padding:10px}
   .act-qr .qrbox{width:72px;height:72px}
@@ -2736,7 +2743,7 @@ var qrcode = function() {
    CONFIGURAÇÃO POR DEFEITO (editável no painel de equipa)
    ========================================================= */
 var VERSION = '1.7';
-var KEY_CFG = 'pea_roda_cfg_v1', KEY_LOG = 'pea_roda_log_v1', KEY_LEADS = 'pea_roda_leads_v1';
+var KEY_CFG = 'pea_roda_cfg_v1', KEY_LOG = 'pea_roda_log_v1', KEY_LEADS = 'pea_roda_leads_v1', KEY_KIOSK = 'pea_roda_kiosk';
 var FAIR_DAYS = {'2026-10-15':1,'2026-10-16':2};
 
 var ICONS = {
@@ -2752,7 +2759,7 @@ var ICONS = {
 };
 
 var DEFAULT_CFG = {
-  cfgRev:6,
+  cfgRev:7,
   pin:'1510',
   autoReturn:25,          // segundos no ecrã de resultado
   idleReturn:60,          // segundos sem toque em pergunta/roda
@@ -2802,9 +2809,9 @@ var DEFAULT_CFG = {
   nextStep:true,
   /* frase-gatilho da consultoria, conforme a resposta a “Para quem é a formação?” */
   triggers:{
-    mim:{head:'Sabe qual deve ser o seu próximo passo profissional?',sub:'Em 30 minutos, a direção da PEA ajuda a escolher a formação certa para o seu percurso.'},
-    equipa:{head:'Que competências fazem falta à sua equipa este ano?',sub:'Em 30 minutos, a direção da PEA ajuda a desenhar a formação da sua equipa e apresenta as condições para empresas.'},
-    ambos:{head:'O próximo passo é seu e da sua equipa?',sub:'Em 30 minutos, a direção da PEA ajuda a planear a formação para si e para a sua equipa.'}
+    mim:{head:'Sabe qual deve ser o seu próximo passo profissional?',sub:'A direção da PEA ajuda-o a escolher a formação certa.'},
+    equipa:{head:'Que competências fazem falta à sua equipa este ano?',sub:'A direção da PEA ajuda a desenhar a formação da sua equipa.'},
+    ambos:{head:'O próximo passo é seu e da sua equipa?',sub:'A direção da PEA ajuda a planear a formação para si e para a equipa.'}
   },
   lead:{
     consent:'Autorizo a Porto Executive Academy (ISCAP) a usar estes dados para me contactar sobre {interesse}.',
@@ -2843,6 +2850,10 @@ if(!cfg){cfg=clone(DEFAULT_CFG)}else{
   if(!cfg.lead)cfg.lead=clone(DEFAULT_CFG.lead);
   if(!('nextStep' in cfg))cfg.nextStep=true;
   if(!cfg.triggers)cfg.triggers=clone(DEFAULT_CFG.triggers);
+  if((cfg.cfgRev||0)<7){
+    /* v2.0: textos curtos da consultoria; marcação direta no LimeSurvey */
+    cfg.triggers=clone(DEFAULT_CFG.triggers);
+  }
   if((cfg.cfgRev||0)<6){
     /* v1.9: condições especiais em PG e MBA */
     cfg.prizes.forEach(function(p){if(p.id==='consult')p.msg=DEFAULT_CFG.prizes.filter(function(q){return q.id==='consult'})[0].msg});
@@ -2862,7 +2873,7 @@ if(!cfg){cfg=clone(DEFAULT_CFG)}else{
     /* v1.2: consultoria e sessão online deixam de ser sorteadas */
     cfg.prizes.forEach(function(p){if(p.id==='consult'||p.id==='online')p.active=false});
   }
-  cfg.cfgRev=6;
+  cfg.cfgRev=7;
 }
 var log = load(KEY_LOG) || [];
 var leads = load(KEY_LEADS) || [];
@@ -3018,6 +3029,7 @@ $$('[data-go]').forEach(function(b){b.addEventListener('click',function(e){e.sto
 $('#s-attract').addEventListener('click',function(e){
   if(e.target.closest('[data-admin]'))return;
   audio();keepAwake();goFull();
+  try{localStorage.setItem(KEY_KIOSK,'1')}catch(e){}
   go('question');
 });
 $$('.choice').forEach(function(b){b.addEventListener('click',function(){
@@ -3175,11 +3187,11 @@ function renderSide(){
     var cw=consultWhen();
     if(cw){
       h='<div class="q">O seu próximo passo</div><h4><span>'+esc(tg.head)+'</span></h4>';
-      h+='<button class="next-card hot" data-int="consultoria"><span class="ni">'+ICONS.consult+'</span><span><span class="nt" style="display:block">Consultoria de 30 min, aqui no stand</span><span class="ns" style="display:block">'+esc(tg.sub)+' '+esc(cw)+'. Quem fizer a consultoria poderá beneficiar de condições especiais em qualquer Pós-Graduação ou MBA da PEA.</span></span><span class="ng">Quero</span></button>';
+      h+='<div class="next-card next-box hot"><div class="nrow"><span class="ni">'+ICONS.consult+'</span><span><span class="nt" style="display:block">Consultoria de 30 min, aqui no stand</span><span class="ns" style="display:block">'+esc(tg.sub)+'</span><span class="nm" style="display:block">'+esc(cw)+' · Condições especiais em Pós-Graduações e MBAs</span></span></div><button class="next-cta" data-int="consultoria">Quero marcar o horário da minha sessão</button></div>';
     }else{
       h='<div class="q">O seu próximo passo</div><h4>Leve mais do que um brinde: <span>fale connosco</span>.</h4>';
     }
-    h+='<button class="next-card" data-int="sessao"><span class="ni">'+ICONS.online+'</span><span><span class="nt" style="display:block">Sessão online · 22 out, 19h</span><span class="ns" style="display:block">Conheça a oferta da PEA com calma, a partir de casa.</span></span><span class="ng">Quero</span></button>';
+    h+='<div class="next-card next-box"><div class="nrow"><span class="ni">'+ICONS.online+'</span><span><span class="nt" style="display:block">Sessão online · 22 out, 19h</span><span class="ns" style="display:block">Conheça a oferta da PEA com calma, a partir de casa.</span></span></div><button class="next-cta" data-int="sessao">Quero ir à sessão online dia 22</button></div>';
     if(cfg.areaQuestion)h+='<div style="text-align:center"><button class="linkbtn" data-side="ask">Ver programas por área ›</button></div>';
   }else if(sideMode==='act'){
     var it=INT[sideInt],url=sideInt==='consultoria'?cfg.consultUrl:cfg.sessionUrl;
@@ -3219,7 +3231,12 @@ function renderSide(){
     sideMode='qr';renderSide();startReturn(Math.max(cfg.autoReturn||25,40));
   })});
   $$('[data-int]',el).forEach(function(b){b.addEventListener('click',function(){
-    sideInt=b.getAttribute('data-int');markInterest(sideInt);sideMode='act';renderSide();startReturn(Math.max(cfg.autoReturn||25,45));
+    sideInt=b.getAttribute('data-int');markInterest(sideInt);
+    var url=sideInt==='consultoria'?cfg.consultUrl:cfg.sessionUrl;
+    if(!url){sideMode='act';renderSide();startReturn(Math.max(cfg.autoReturn||25,45));return}
+    try{localStorage.setItem(KEY_KIOSK,'1')}catch(e){}
+    clearTimeout(returnT);clearTimeout(idleT);
+    location.href=url;
   })});
   $$('[data-lead]',el).forEach(function(b){b.addEventListener('click',function(){openLead(b.getAttribute('data-lead'))})});
   $$('[data-side]',el).forEach(function(b){b.addEventListener('click',function(){
@@ -3625,6 +3642,19 @@ function shareCSV(){
   }catch(e){}
   toast('Partilha não suportada aqui: use Exportar CSV');
 }
+
+/* regresso do LimeSurvey (URL final dos formulários: ...?fim=consultoria ou ?fim=sessao) */
+(function(){
+  try{
+    var q=new URLSearchParams(location.search),fim=q.get('fim');
+    if(!fim)return;
+    var kiosk=false;try{kiosk=localStorage.getItem(KEY_KIOSK)==='1'}catch(e){}
+    if(!kiosk){location.replace('https://www.pea.iscap.ipp.pt/');return}
+    try{history.replaceState(null,'',location.pathname)}catch(e){}
+    go('attract');
+    toast(fim==='sessao'?'Inscrição feita. Até dia 22!':'Marcação feita. Até já, no stand!');
+  }catch(e){}
+})();
 
 /* bloquear menu de contexto e zoom acidental */
 document.addEventListener('contextmenu',function(e){if(!adm.classList.contains('on'))e.preventDefault()});
