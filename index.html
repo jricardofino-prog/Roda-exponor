@@ -2756,6 +2756,7 @@ var KEY_CFG = 'pea_roda_cfg_v1', KEY_LOG = 'pea_roda_log_v1', KEY_LEADS = 'pea_r
 var FAIR_DAYS = {'2026-10-15':1,'2026-10-16':2};
 
 var ICONS = {
+  mail:'<svg viewBox="0 0 64 64" fill="none" stroke="#fff" stroke-width="3.4" stroke-linejoin="round" stroke-linecap="round"><rect x="8" y="14" width="48" height="36" rx="4"/><path d="M10 18l22 17 22-17"/></svg>',
   ball:'<svg viewBox="0 0 64 64" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round"><circle cx="32" cy="32" r="24"/><path d="M14 22c8 5 28 5 36 0M14 42c8-5 28-5 36 0" opacity=".55"/></svg>',
   webcam:'<svg viewBox="0 0 64 64" fill="none" stroke="#fff" stroke-width="3.4" stroke-linejoin="round"><rect x="6" y="20" width="52" height="24" rx="12"/><rect x="14" y="25" width="14" height="14" rx="2" fill="#fff"/><circle cx="44" cy="32" r="4"/></svg>',
   notes:'<svg viewBox="0 0 64 64" fill="none" stroke="#fff" stroke-width="3.4" stroke-linejoin="round" stroke-linecap="round"><rect x="12" y="8" width="34" height="48" rx="3"/><path d="M46 16h6M46 26h6M46 36h6"/><path d="M20 22h18M20 31h18M20 40h11"/></svg>',
@@ -2768,7 +2769,7 @@ var ICONS = {
 };
 
 var DEFAULT_CFG = {
-  cfgRev:8,
+  cfgRev:9,
   pin:'1510',
   autoReturn:25,          // segundos no ecrã de resultado
   idleReturn:60,          // segundos sem toque em pergunta/roda
@@ -2825,6 +2826,7 @@ var DEFAULT_CFG = {
   lead:{
     consent:'Autorizo a Porto Executive Academy (ISCAP) a usar estes dados para me contactar sobre {interesse}.',
     news:'Quero também receber a newsletter da PEA com a oferta formativa (opcional).',
+    redeConsent:'Ao pedir para entrar na rede, autoriza a Porto Executive Academy (ISCAP) a enviar-lhe por email informação sobre formação, eventos e a newsletter da PEA. Pode cancelar a qualquer momento através de pea@iscap.ipp.pt.',
     privacy:'Responsável pelo tratamento: ISCAP, Porto Executive Academy. Os dados servem apenas os fins que autorizou acima e pode retirar o consentimento a qualquer momento através de pea@iscap.ipp.pt.',
     thanks:{consultoria:'Obrigado! A equipa da PEA vai falar consigo para marcar a consultoria.',sessao:'Obrigado! A PEA envia-lhe o link da sessão por email antes de 22 de outubro.'}
   },
@@ -2865,6 +2867,10 @@ if(!cfg){cfg=clone(DEFAULT_CFG)}else{
   if(!cfg.lead)cfg.lead=clone(DEFAULT_CFG.lead);
   if(!('nextStep' in cfg))cfg.nextStep=true;
   if(!cfg.triggers)cfg.triggers=clone(DEFAULT_CFG.triggers);
+  if((cfg.cfgRev||0)<9){
+    /* v2.2: opção Rede PEA */
+    if(cfg.lead&&!cfg.lead.redeConsent)cfg.lead.redeConsent=DEFAULT_CFG.lead.redeConsent;
+  }
   if((cfg.cfgRev||0)<8){
     /* v2.1: títulos rotativos com ganchos por público */
     cfg.idle=clone(DEFAULT_CFG.idle);
@@ -2892,7 +2898,7 @@ if(!cfg){cfg=clone(DEFAULT_CFG)}else{
     /* v1.2: consultoria e sessão online deixam de ser sorteadas */
     cfg.prizes.forEach(function(p){if(p.id==='consult'||p.id==='online')p.active=false});
   }
-  cfg.cfgRev=8;
+  cfg.cfgRev=9;
 }
 var log = load(KEY_LOG) || [];
 var leads = load(KEY_LEADS) || [];
@@ -3158,7 +3164,8 @@ function finish(prize){
 var curRec=null,sideMode='ask',sideArea=null,sideInt=null,leadSaved={};
 var INT={
   consultoria:{label:'Consultoria de 30 minutos',about:'a consultoria de 30 minutos na UP 2026',icon:'consult'},
-  sessao:{label:'Sessão online · 22 out, 19h',about:'a sessão online da PEA de 22 de outubro',icon:'online'}
+  sessao:{label:'Sessão online · 22 out, 19h',about:'a sessão online da PEA de 22 de outubro',icon:'online'},
+  rede:{label:'Rede PEA',about:'formação, eventos e a newsletter da PEA',icon:'mail'}
 };
 function consultOpen(){return !(cfg.consultCutoff&&nowMin()>=toMin(cfg.consultCutoff))}
 /* quando é a consultoria, dito ao visitante; null = já não há (2.º dia depois da hora de corte) */
@@ -3211,6 +3218,7 @@ function renderSide(){
       h='<div class="q">O seu próximo passo</div><h4>Leve mais do que um brinde: <span>fale connosco</span>.</h4>';
     }
     h+='<div class="next-card next-box"><div class="nrow"><span class="ni">'+ICONS.online+'</span><span><span class="nt" style="display:block">Sessão online · 22 out, 19h</span><span class="ns" style="display:block">Conheça a oferta da PEA com calma, a partir de casa.</span></span></div><button class="next-cta" data-int="sessao">Quero ir à sessão online dia 22</button></div>';
+    h+='<div class="next-card next-box"><div class="nrow"><span class="ni">'+ICONS.mail+'</span><span><span class="nt" style="display:block">Fique na rede PEA</span><span class="ns" style="display:block">Novidades, eventos e a newsletter da PEA no seu email.</span></span></div><button class="next-cta" data-rede="1">Quero receber as novidades da PEA</button></div>';
     if(cfg.areaQuestion)h+='<div style="text-align:center"><button class="linkbtn" data-side="ask">Ver programas por área ›</button></div>';
   }else if(sideMode==='act'){
     var it=INT[sideInt],url=sideInt==='consultoria'?cfg.consultUrl:cfg.sessionUrl;
@@ -3222,6 +3230,17 @@ function renderSide(){
         '<div class="act-badge">'+BADGE_ICON+'<span>Mostre o seu crachá da feira à nossa equipa. Nós tratamos do resto.</span></div>'+
         '<div class="act-or">ou</div><button class="act-btn" data-lead="'+sideInt+'">Deixar o meu email aqui</button>'+
         (url?'<div class="act-qr"><div class="qrbox">'+qrSvg(url)+'</div><span>ou '+(sideInt==='consultoria'?'escolha já o horário':'inscreva-se')+' no seu telemóvel</span></div>':'');
+    }
+    h+='<div style="text-align:center"><button class="linkbtn" data-side="next">‹ Voltar</button></div>';
+  }else if(sideMode==='rede'){
+    h='<div class="q">Rede PEA</div>';
+    if(leadSaved.rede){
+      h+='<div class="act-done">Obrigado! Passa a receber as novidades e a newsletter da PEA.</div>';
+    }else{
+      h+='<h4>Mostre o seu <span>crachá</span> à nossa equipa.</h4>'+
+        '<div class="act-badge">'+BADGE_ICON+'<span>Digitalizamos o crachá e fica na nossa rede. Indique o código <b>REDE · #'+(curRec?curRec.id:'')+'</b>.</span></div>'+
+        '<p class="n" style="font-size:12.5px;line-height:1.45;color:var(--cream2);margin:12px 0 0">'+esc(cfg.lead.redeConsent||'')+'</p>'+
+        '<div style="text-align:center"><button class="linkbtn" data-lead="rede">Não tem crachá? Deixe o email aqui ›</button></div>';
     }
     h+='<div style="text-align:center"><button class="linkbtn" data-side="next">‹ Voltar</button></div>';
   }else if(sideMode==='session'){
@@ -3258,6 +3277,9 @@ function renderSide(){
     location.href=url;
   })});
   $$('[data-lead]',el).forEach(function(b){b.addEventListener('click',function(){openLead(b.getAttribute('data-lead'))})});
+  $$('[data-rede]',el).forEach(function(b){b.addEventListener('click',function(){
+    markInterest('rede');sideInt='rede';sideMode='rede';renderSide();startReturn(Math.max(cfg.autoReturn||25,60));
+  })});
   $$('[data-side]',el).forEach(function(b){b.addEventListener('click',function(){
     sideMode=b.getAttribute('data-side');renderSide();startReturn(Math.max(cfg.autoReturn||25,40));
   })});
@@ -3269,9 +3291,9 @@ var lmInt=null,lmIdle=null;
 function openLead(k){
   lmInt=k;pauseReturn();
   $('#lmKicker').textContent=INT[k].label;
-  $('#lmLead').textContent=k==='consultoria'?'Deixe o nome e o email e a equipa marca a consultoria consigo.':'Deixe o nome e o email e enviamos-lhe o link da sessão.';
+  $('#lmLead').textContent=k==='consultoria'?'Deixe o nome e o email e a equipa marca a consultoria consigo.':k==='rede'?'Deixe o nome e o email e passa a receber as novidades da PEA.':'Deixe o nome e o email e enviamos-lhe o link da sessão.';
   $('#lmC1t').textContent=(cfg.lead.consent||'').replace('{interesse}',INT[k].about);
-  $('#lmC2t').textContent=cfg.lead.news||'';$('#lmC2').parentNode.style.display=cfg.lead.news?'flex':'none';
+  $('#lmC2t').textContent=cfg.lead.news||'';$('#lmC2').parentNode.style.display=(cfg.lead.news&&k!=='rede')?'flex':'none';
   $('#lmPriv').textContent=cfg.lead.privacy||'';
   ['lmName','lmEmail','lmCompany'].forEach(function(i){$('#'+i).value=''});
   $('#lmC1').checked=false;$('#lmC2').checked=false;$('#lmErr').textContent='';
@@ -3293,9 +3315,9 @@ $('#lmSave').addEventListener('click',function(){
   else if(!$('#lmC1').checked)err='Para o podermos contactar, precisamos da sua autorização na primeira caixa.';
   if(err){$('#lmErr').textContent=err;armLeadIdle();return}
   var now=new Date();
-  leads.push({id:(leads.length?leads[leads.length-1].id:0)+1,ts:now.toISOString(),d:dateKey(now),h:hms(now),spin:curRec?curRec.id:'',a:curRec?curRec.a:'',int:lmInt,name:n,email:em,company:co,c1:true,c2:$('#lmC2').checked,test:!!cfg.testMode});
+  leads.push({id:(leads.length?leads[leads.length-1].id:0)+1,ts:now.toISOString(),d:dateKey(now),h:hms(now),spin:curRec?curRec.id:'',a:curRec?curRec.a:'',int:lmInt,name:n,email:em,company:co,c1:true,c2:lmInt==='rede'?true:$('#lmC2').checked,test:!!cfg.testMode});
   saveLeads();markInterest(lmInt);leadSaved[lmInt]=true;
-  closeLead();sideMode='act';sideInt=lmInt;renderSide();startReturn(15);
+  closeLead();sideMode=lmInt==='rede'?'rede':'act';sideInt=lmInt;renderSide();startReturn(15);
 });
 
 /* ecrã de espera: mensagens rotativas */
@@ -3403,6 +3425,7 @@ function pResumo(){
     '<div class="kpi"><div class="v">'+allReal.length+'</div><div class="l">Jogadas no total</div></div>'+
     '<div class="kpi"><div class="v">'+t.filter(function(r){return (r.int||'').indexOf('consultoria')>=0}).length+'</div><div class="l">Interesse em consultoria hoje</div></div>'+
     '<div class="kpi"><div class="v">'+t.filter(function(r){return (r.int||'').indexOf('sessao')>=0}).length+'</div><div class="l">Interesse na sessão hoje</div></div>'+
+    '<div class="kpi"><div class="v">'+t.filter(function(r){return (r.int||'').indexOf('rede')>=0}).length+'</div><div class="l">Pedidos de rede PEA hoje</div></div>'+
     '<div class="kpi"><div class="v">'+leads.filter(function(l){return !l.test&&l.d===dateKey()}).length+'</div><div class="l">Contactos deixados hoje</div></div></div>';
   h+='<div class="card"><h4>Prémios atribuídos hoje</h4><table><tr><th>Prémio</th><th>Hoje</th><th>Limite diário</th><th style="width:30%">Uso</th><th>Estado</th></tr>';
   cfg.prizes.forEach(function(p){
@@ -3629,7 +3652,7 @@ function csvText(){
   var head=['id','data','hora','dia_feira','para_quem','premio_id','premio','area_interesse','interesse_proximo_passo','tipo','anulada'];
   var lines=[head.join(';')];
   log.forEach(function(r){
-    lines.push([r.id,r.d,r.h,FAIR_DAYS[r.d]||'',AUD_LABEL[r.a]||r.a,r.p,r.pl,areaLabels(r.ar),(r.int||'').replace('sessao','sessao_online').replace('|',' / '),r.test?'teste':'real',r.void?'sim':'nao'].map(function(v){
+    lines.push([r.id,r.d,r.h,FAIR_DAYS[r.d]||'',AUD_LABEL[r.a]||r.a,r.p,r.pl,areaLabels(r.ar),(r.int||'').replace('sessao','sessao_online').replace('rede','rede_pea').replace(/\|/g,' / '),r.test?'teste':'real',r.void?'sim':'nao'].map(function(v){
       v=String(v==null?'':v);return /[;"\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v}).join(';'));
   });
   return '﻿'+lines.join('\r\n');
